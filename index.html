@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>☄️ BlueCometByteStar</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #000;
+    --indigo:   #5b4fff;
+    --blue:     #2d9cff;
+    --green:    #00e5a0;
+    --glow-i:   rgba(91,79,255,0.55);
+    --glow-g:   rgba(0,229,160,0.45);
+    --glass:    rgba(255,255,255,0.04);
+    --border:   rgba(255,255,255,0.08);
+    --text:     #d0d8ff;
+    --dim:      rgba(255,255,255,0.35);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Star background ──────────────────────────────────── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(91,79,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 70%, rgba(45,156,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 25%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 60%, rgba(0,229,160,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 20% 90%, rgba(91,79,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 80%, rgba(45,156,255,0.3) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Layout ───────────────────────────────────────────── */
+  #app {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 16px 12px 40px;
+  }
+
+  /* ── Comet Menu ───────────────────────────────────────── */
+  #comet-wrap {
+    position: fixed;
+    top: 14px; right: 14px;
+    z-index: 999;
+  }
+
+  #comet-btn {
+    width: 48px; height: 48px;
+    border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--blue), var(--indigo));
+    clip-path: polygon(50% 0%, 100% 35%, 85% 100%, 15% 100%, 0% 35%);
+    transform: rotate(-30deg);
+    box-shadow: 0 0 18px var(--glow-i);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  #comet-btn:hover {
+    transform: rotate(-30deg) scale(1.18);
+    box-shadow: 0 0 32px var(--glow-i);
+  }
+
+  #comet-menu {
+    display: none;
+    position: absolute;
+    top: 56px; right: 0;
+    min-width: 200px;
+    background: rgba(10,8,30,0.96);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 0;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 24px var(--glow-i);
+  }
+  #comet-menu.open { display: block; }
+
+  .menu-item {
+    display: block;
+    padding: 9px 18px;
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .menu-item:hover { background: var(--glass); color: #fff; }
+
+  .menu-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 6px 0;
+  }
+
+  .menu-footer {
+    padding: 8px 18px;
+    font-size: 11px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+
+  /* ── Title ────────────────────────────────────────────── */
+  #title {
+    text-align: center;
+    padding: 10px 0 18px;
+    font-size: 15px;
+    letter-spacing: 4px;
+    color: var(--blue);
+    text-shadow: 0 0 12px var(--blue);
+    text-transform: uppercase;
+  }
+
+  /* ── Glass card ───────────────────────────────────────── */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(6px);
+  }
+
+  /* ── Main Player ──────────────────────────────────────── */
+  #player1-wrap {
+    box-shadow: 0 0 28px var(--glow-i);
+    border-color: rgba(91,79,255,0.3);
+  }
+
+  .player-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .main-video {
+    width: 100%;
+    display: block;
+    border-radius: 10px;
+  }
+
+  /* ── Controls ─────────────────────────────────────────── */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .ctrl-btn {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+  }
+  .ctrl-btn:hover {
+    background: rgba(91,79,255,0.2);
+    box-shadow: 0 0 10px var(--glow-i);
+    color: #fff;
+  }
+  .ctrl-btn.active {
+    background: rgba(91,79,255,0.35);
+    box-shadow: 0 0 14px var(--glow-i);
+    color: #fff;
+  }
+  .ctrl-btn.green-active {
+    background: rgba(0,229,160,0.2);
+    box-shadow: 0 0 12px var(--glow-g);
+    color: var(--green);
+  }
+
+  /* ── Sliders ──────────────────────────────────────────── */
+  .slider-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .slider-group {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--dim);
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 90px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--indigo);
+    box-shadow: 0 0 6px var(--glow-i);
+    cursor: pointer;
+  }
+
+  select.speed-select {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 4px 7px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* ── Utility Row ──────────────────────────────────────── */
+  .util-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .util-btn {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 7px 13px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.15s, box-shadow 0.15s;
+  }
+  .util-btn:hover {
+    background: rgba(45,156,255,0.15);
+    box-shadow: 0 0 10px rgba(45,156,255,0.3);
+  }
+  .util-btn.active {
+    background: rgba(0,229,160,0.15);
+    box-shadow: 0 0 12px var(--glow-g);
+    color: var(--green);
+  }
+
+  #file-input { display: none; }
+
+  /* ── Video Grid ───────────────────────────────────────── */
+  #video-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    position: relative;
+    min-height: 30px;
+  }
+
+  .vid-box {
+    position: relative;
+    width: 160px;
+    height: 96px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: #050510;
+    transition: box-shadow 0.2s, transform 0.2s;
+    flex-shrink: 0;
+  }
+  .vid-box:hover {
+    box-shadow: 0 0 16px var(--glow-i);
+    transform: scale(1.03);
+  }
+  .vid-box video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .vid-box .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.75), transparent);
+    display: flex;
+    align-items: flex-end;
+    padding: 5px 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .vid-box:hover .overlay { opacity: 1; }
+  .vid-box .overlay span {
+    font-size: 10px;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* ── Player 2 ─────────────────────────────────────────── */
+  #player2-wrap {
+    display: none;
+    box-shadow: 0 0 24px var(--glow-g);
+    border-color: rgba(0,229,160,0.25);
+  }
+  #player2-wrap .ctrl-btn:hover,
+  #player2-wrap .ctrl-btn.active {
+    background: rgba(0,229,160,0.2);
+    box-shadow: 0 0 10px var(--glow-g);
+  }
+  input[type=range].green::-webkit-slider-thumb {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--glow-g);
+  }
+
+  #p2-selector-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  #p2-select {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    flex: 1;
+    min-width: 0;
+    max-width: 300px;
+  }
+
+  /* ── Fullscreen overlay ───────────────────────────────── */
+  #fullscreen-container {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #fullscreen-container.active {
+    display: flex;
+  }
+  #fullscreen-container video {
+    max-width: 100%;
+    max-height: calc(100vh - 60px);
+  }
+  #fs-exit-btn {
+    margin-top: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 1px;
+  }
+
+  /* ── Empty state ──────────────────────────────────────── */
+  .empty-hint {
+    font-size: 12px;
+    color: var(--dim);
+    text-align: center;
+    padding: 14px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Comet Menu ─────────────────────────────────────────── -->
+<div id="comet-wrap">
+  <button id="comet-btn" title="Menu"></button>
+  <div id="comet-menu">
+    <button class="menu-item">Sign In</button>
+    <button class="menu-item">Create Account</button>
+    <hr class="menu-divider"/>
+    <button class="menu-item">🚀 Join Talent Team</button>
+    <button class="menu-item">💼 Investor Info</button>
+    <hr class="menu-divider"/>
+    <div class="menu-footer">BlueCometByteStar<br/>hello@bluecomet.work</div>
+  </div>
+</div>
+
+<!-- ── Fullscreen container ───────────────────────────────── -->
+<div id="fullscreen-container">
+  <!-- video moved here dynamically -->
+  <button id="fs-exit-btn">✕ EXIT FULLSCREEN</button>
+</div>
+
+<!-- ── App ────────────────────────────────────────────────── -->
+<div id="app">
+
+  <div id="title">☄ BlueCometByteStar</div>
+
+  <!-- ── Player 1 ─────────────────────────────────────────── -->
+  <div class="card" id="player1-wrap">
+    <div class="player-label">Player 1 — Indigo</div>
+
+    <div class="video-container" id="p1-container">
+      <video id="video1" class="main-video" playsinline></video>
+    </div>
+
+    <!-- Transport -->
+    <div class="controls" id="p1-controls">
+      <button class="ctrl-btn" id="p1-rew"  title="Rewind 10s">⏪</button>
+      <button class="ctrl-btn" id="p1-prev" title="Previous">⏮</button>
+      <button class="ctrl-btn" id="p1-pp"   title="Play/Pause">▶</button>
+      <button class="ctrl-btn" id="p1-next" title="Next">⏭</button>
+      <button class="ctrl-btn" id="p1-fwd"  title="Forward 10s">⏩</button>
+      <button class="ctrl-btn" id="p1-fs"   title="Fullscreen">⛶</button>
+      <button class="ctrl-btn" id="p1-sp"   title="Special Play (4s toggle)">★</button>
+    </div>
+
+    <!-- Sliders -->
+    <div class="slider-row">
+      <div class="slider-group">
+        <span>VOL</span>
+        <input type="range" id="p1-vol" min="0" max="1" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>BRT</span>
+        <input type="range" id="p1-brt" min="0.5" max="1.5" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>CON</span>
+        <input type="range" id="p1-con" min="0.5" max="1.5" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>SPD</span>
+        <select class="speed-select" id="p1-spd">
+          <option value="0.5">0.5×</option>
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Utility Row ──────────────────────────────────────── -->
+  <div class="card">
+    <div class="util-row">
+      <button class="util-btn" id="btn-load-local">📂 Load Local</button>
+      <input type="file" id="file-input" accept="video/*"/>
+      <button class="util-btn" id="btn-stack">⧉ Stack</button>
+      <button class="util-btn" id="btn-anchula">◎ AnChula Play</button>
+      <button class="util-btn" id="btn-refresh">↺ Refresh</button>
+    </div>
+  </div>
+
+  <!-- ── Video Grid ────────────────────────────────────────── -->
+  <div class="card">
+    <div class="player-label">Media Browser</div>
+    <div id="video-grid">
+      <div class="empty-hint">Drop videos into the /media/ folder, then hit Refresh</div>
+    </div>
+  </div>
+
+  <!-- ── Player 2 ─────────────────────────────────────────── -->
+  <div class="card" id="player2-wrap">
+    <div class="player-label">Player 2 — Green</div>
+
+    <div class="video-container" id="p2-container">
+      <video id="video2" class="main-video" playsinline></video>
+    </div>
+
+    <!-- P2 selector -->
+    <div id="p2-selector-row">
+      <select id="p2-select"><option>— select file —</option></select>
+      <button class="ctrl-btn" id="p2-load-btn">Load</button>
+    </div>
+
+    <!-- Transport -->
+    <div class="controls" id="p2-controls">
+      <button class="ctrl-btn" id="p2-rew">⏪</button>
+      <button class="ctrl-btn" id="p2-prev">⏮</button>
+      <button class="ctrl-btn" id="p2-pp">▶</button>
+      <button class="ctrl-btn" id="p2-next">⏭</button>
+      <button class="ctrl-btn" id="p2-fwd">⏩</button>
+      <button class="ctrl-btn" id="p2-fs">⛶</button>
+      <button class="ctrl-btn" id="p2-sp">★</button>
+    </div>
+
+    <!-- Sliders -->
+    <div class="slider-row">
+      <div class="slider-group">
+        <span>VOL</span>
+        <input type="range" class="green" id="p2-vol" min="0" max="1" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>BRT</span>
+        <input type="range" class="green" id="p2-brt" min="0.5" max="1.5" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>CON</span>
+        <input type="range" class="green" id="p2-con" min="0.5" max="1.5" step="0.01" value="1"/>
+      </div>
+      <div class="slider-group">
+        <span>SPD</span>
+        <select class="speed-select" id="p2-spd">
+          <option value="0.5">0.5×</option>
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let playlist = [];   // [{ src, name }]
+
+const state = {
+  p1: {
+    videoEl:         document.getElementById('video1'),
+    container:       document.getElementById('p1-container'),
+    currentIndex:    -1,
+    specialActive:   false,
+    specialInterval: null,
+    isPlayingState:  true,   // used inside special mode toggle
+  },
+  p2: {
+    videoEl:         document.getElementById('video2'),
+    container:       document.getElementById('p2-container'),
+    currentIndex:    -1,
+    specialActive:   false,
+    specialInterval: null,
+    isPlayingState:  true,
+  }
+};
+
+let stackMode   = false;
+let anchulaMode = false;
+let previewBoxes = [];   // { el, vid } per playlist item
+
+// Active fullscreen state
+let fsState = null;  // { player, originalParent, originalBefore }
+
+// ============================================================
+//  SERVER / PLAYLIST
+// ============================================================
+async function fetchVideos() {
+  try {
+    const res  = await fetch('/videos');
+    const data = await res.json();
+    playlist = data.files.map(f => ({ src: `/media/${f}`, name: f }));
+    buildGrid();
+    populateP2Select();
+  } catch (e) {
+    console.warn('[BCBS] Could not reach /videos', e);
+  }
+}
+
+// ============================================================
+//  VIDEO GRID
+// ============================================================
+function buildGrid() {
+  const grid = document.getElementById('video-grid');
+  grid.innerHTML = '';
+  previewBoxes = [];
+
+  if (playlist.length === 0) {
+    grid.innerHTML = '<div class="empty-hint">No videos found in /media/ — hit Refresh after adding files</div>';
+    return;
+  }
+
+  playlist.forEach((item, i) => {
+    const box = document.createElement('div');
+    box.className = 'vid-box';
+
+    const v = document.createElement('video');
+    v.src    = item.src;
+    v.muted  = true;
+    v.preload = 'metadata';
+    v.addEventListener('loadedmetadata', () => {
+      v.currentTime = Math.min(36, v.duration * 0.2);
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    const span = document.createElement('span');
+    span.textContent = item.name;
+    overlay.appendChild(span);
+
+    box.appendChild(v);
+    box.appendChild(overlay);
+    box.addEventListener('click', () => loadIntoPlayer(state.p1, i));
+
+    grid.appendChild(box);
+    previewBoxes.push({ el: box, vid: v });
+  });
+
+  applyStackLayout();
+}
+
+function populateP2Select() {
+  const sel = document.getElementById('p2-select');
+  sel.innerHTML = '<option>— select file —</option>';
+  playlist.forEach((item, i) => {
+    const opt = document.createElement('option');
+    opt.value       = i;
+    opt.textContent = item.name;
+    sel.appendChild(opt);
+  });
+}
+
+// ============================================================
+//  LOAD INTO PLAYER
+// ============================================================
+function loadIntoPlayer(player, index) {
+  if (index < 0 || index >= playlist.length) return;
+  player.currentIndex = index;
+  player.videoEl.src  = playlist[index].src;
+  player.videoEl.play().catch(() => {});
+  updatePlayBtn(player);
+}
+
+// ============================================================
+//  PLAY / PAUSE
+// ============================================================
+function togglePlayPause(player) {
+  if (player.videoEl.paused) {
+    player.videoEl.play().catch(() => {});
+  } else {
+    player.videoEl.pause();
+  }
+  updatePlayBtn(player);
+}
+
+function updatePlayBtn(player) {
+  const id  = player === state.p1 ? 'p1-pp' : 'p2-pp';
+  const btn = document.getElementById(id);
+  btn.textContent = player.videoEl.paused ? '▶' : '⏸';
+}
+
+// ── update on external events (ended, etc.) ─────────────────
+['video1', 'video2'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('play',  () => updatePlayBtn(id === 'video1' ? state.p1 : state.p2));
+  el.addEventListener('pause', () => updatePlayBtn(id === 'video1' ? state.p1 : state.p2));
+  el.addEventListener('ended', () => {
+    const player = id === 'video1' ? state.p1 : state.p2;
+    const next = player.currentIndex + 1;
+    if (next < playlist.length) loadIntoPlayer(player, next);
+  });
+});
+
+// ============================================================
+//  PREV / NEXT / SEEK
+// ============================================================
+function prevTrack(player) {
+  const i = player.currentIndex;
+  if (i > 0) loadIntoPlayer(player, i - 1);
+}
+function nextTrack(player) {
+  const i = player.currentIndex;
+  if (i < playlist.length - 1) loadIntoPlayer(player, i + 1);
+}
+function rewind(player)  { player.videoEl.currentTime = Math.max(0, player.videoEl.currentTime - 10); }
+function forward(player) { player.videoEl.currentTime += 10; }
+
+// ============================================================
+//  FILTERS
+// ============================================================
+function applyFilter(player, brt, con) {
+  player.videoEl.style.filter = `brightness(${brt}) contrast(${con})`;
+}
+
+// ============================================================
+//  SPECIAL PLAY MODE — single setInterval, no nesting
+// ============================================================
+function toggleSpecial(player, btn) {
+  if (player.specialActive) {
+    // OFF
+    clearInterval(player.specialInterval);
+    player.specialInterval = null;
+    player.specialActive   = false;
+    btn.classList.remove('active');
+    // Resume normal play
+    player.videoEl.play().catch(() => {});
+    updatePlayBtn(player);
+  } else {
+    // ON
+    player.specialActive  = true;
+    player.isPlayingState = true;
+    btn.classList.add('active');
+
+    // Force play immediately
+    player.videoEl.play().catch(() => {});
+    updatePlayBtn(player);
+
+    player.specialInterval = setInterval(() => {
+      if (player.isPlayingState) {
+        player.videoEl.pause();
+      } else {
+        player.videoEl.play().catch(() => {});
+      }
+      player.isPlayingState = !player.isPlayingState;
+      updatePlayBtn(player);
+    }, 4000);
+  }
+}
+
+// ============================================================
+//  STACK MODE
+// ============================================================
+function toggleStack() {
+  stackMode = !stackMode;
+  document.getElementById('btn-stack').classList.toggle('active', stackMode);
+  document.getElementById('player2-wrap').style.display = stackMode ? 'block' : 'none';
+  applyStackLayout();
+}
+
+function applyStackLayout() {
+  const grid = document.getElementById('video-grid');
+
+  if (stackMode) {
+    let zIndex = 10;
+    previewBoxes.forEach(({ el }, i) => {
+      el.style.position = 'absolute';
+      el.style.top      = '0';
+      el.style.left     = '0';
+      el.style.zIndex   = zIndex + i;
+    });
+    // Give grid a height so stacked children are visible
+    const h = previewBoxes.length > 0 ? 96 : 30;
+    grid.style.height   = h + 'px';
+    grid.style.position = 'relative';
+  } else {
+    previewBoxes.forEach(({ el }) => {
+      el.style.position = '';
+      el.style.top      = '';
+      el.style.left     = '';
+      el.style.zIndex   = '';
+    });
+    grid.style.height   = '';
+    grid.style.position = '';
+  }
+}
+
+// ============================================================
+//  ANCHULA MODE
+// ============================================================
+function toggleAnchula() {
+  anchulaMode = !anchulaMode;
+  document.getElementById('btn-anchula').classList.toggle('active', anchulaMode);
+
+  previewBoxes.forEach(({ vid }) => {
+    vid.muted = true;
+    if (anchulaMode) {
+      vid.play().catch(() => {});
+    } else {
+      vid.pause();
+    }
+  });
+}
+
+// ============================================================
+//  LOCAL FILE LOAD
+// ============================================================
+document.getElementById('btn-load-local').addEventListener('click', () => {
+  document.getElementById('file-input').click();
+});
+document.getElementById('file-input').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  state.p1.videoEl.src      = url;
+  state.p1.currentIndex     = -1;
+  state.p1.videoEl.play().catch(() => {});
+  updatePlayBtn(state.p1);
+  this.value = '';
+});
+
+// ============================================================
+//  FULLSCREEN (DOM reparenting)
+// ============================================================
+const fsContainer = document.getElementById('fullscreen-container');
+
+function enterFullscreen(player) {
+  const vid    = player.videoEl;
+  const parent = vid.parentElement;
+
+  // Store restore info
+  fsState = {
+    player,
+    originalParent: parent,
+    originalBefore: vid.nextSibling,
+  };
+
+  fsContainer.insertBefore(vid, document.getElementById('fs-exit-btn'));
+  fsContainer.classList.add('active');
+}
+
+function exitFullscreen() {
+  if (!fsState) return;
+  const { originalParent, originalBefore, player } = fsState;
+  const vid = player.videoEl;
+
+  if (originalBefore) {
+    originalParent.insertBefore(vid, originalBefore);
+  } else {
+    originalParent.appendChild(vid);
+  }
+
+  fsContainer.classList.remove('active');
+  fsState = null;
+}
+
+document.getElementById('fs-exit-btn').addEventListener('click', exitFullscreen);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') exitFullscreen(); });
+
+// ============================================================
+//  WIRE UP PLAYER 1 CONTROLS
+// ============================================================
+document.getElementById('p1-rew') .addEventListener('click', () => rewind(state.p1));
+document.getElementById('p1-fwd') .addEventListener('click', () => forward(state.p1));
+document.getElementById('p1-prev').addEventListener('click', () => prevTrack(state.p1));
+document.getElementById('p1-next').addEventListener('click', () => nextTrack(state.p1));
+document.getElementById('p1-pp')  .addEventListener('click', () => togglePlayPause(state.p1));
+document.getElementById('p1-fs')  .addEventListener('click', () => enterFullscreen(state.p1));
+document.getElementById('p1-sp')  .addEventListener('click', function () { toggleSpecial(state.p1, this); });
+
+document.getElementById('p1-vol').addEventListener('input', function () {
+  state.p1.videoEl.volume = this.value;
+});
+document.getElementById('p1-spd').addEventListener('change', function () {
+  state.p1.videoEl.playbackRate = parseFloat(this.value);
+});
+
+function p1FilterUpdate() {
+  const brt = document.getElementById('p1-brt').value;
+  const con  = document.getElementById('p1-con').value;
+  applyFilter(state.p1, brt, con);
+}
+document.getElementById('p1-brt').addEventListener('input', p1FilterUpdate);
+document.getElementById('p1-con').addEventListener('input', p1FilterUpdate);
+
+// ============================================================
+//  WIRE UP PLAYER 2 CONTROLS
+// ============================================================
+document.getElementById('p2-rew') .addEventListener('click', () => rewind(state.p2));
+document.getElementById('p2-fwd') .addEventListener('click', () => forward(state.p2));
+document.getElementById('p2-prev').addEventListener('click', () => prevTrack(state.p2));
+document.getElementById('p2-next').addEventListener('click', () => nextTrack(state.p2));
+document.getElementById('p2-pp')  .addEventListener('click', () => togglePlayPause(state.p2));
+document.getElementById('p2-fs')  .addEventListener('click', () => enterFullscreen(state.p2));
+document.getElementById('p2-sp')  .addEventListener('click', function () { toggleSpecial(state.p2, this); });
+
+document.getElementById('p2-vol').addEventListener('input', function () {
+  state.p2.videoEl.volume = this.value;
+});
+document.getElementById('p2-spd').addEventListener('change', function () {
+  state.p2.videoEl.playbackRate = parseFloat(this.value);
+});
+
+function p2FilterUpdate() {
+  const brt = document.getElementById('p2-brt').value;
+  const con  = document.getElementById('p2-con').value;
+  applyFilter(state.p2, brt, con);
+}
+document.getElementById('p2-brt').addEventListener('input', p2FilterUpdate);
+document.getElementById('p2-con').addEventListener('input', p2FilterUpdate);
+
+document.getElementById('p2-load-btn').addEventListener('click', () => {
+  const sel = document.getElementById('p2-select');
+  const i   = parseInt(sel.value, 10);
+  if (!isNaN(i)) loadIntoPlayer(state.p2, i);
+});
+
+// ============================================================
+//  UTILITY BUTTONS
+// ============================================================
+document.getElementById('btn-stack')  .addEventListener('click', toggleStack);
+document.getElementById('btn-anchula').addEventListener('click', toggleAnchula);
+document.getElementById('btn-refresh').addEventListener('click', fetchVideos);
+document.getElementById('comet-btn')  .addEventListener('click', () => {
+  document.getElementById('comet-menu').classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!document.getElementById('comet-wrap').contains(e.target)) {
+    document.getElementById('comet-menu').classList.remove('open');
+  }
+});
+
+// ============================================================
+//  INIT
+// ============================================================
+fetchVideos();
+</script>
+</body>
+</html>
